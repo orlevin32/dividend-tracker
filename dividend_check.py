@@ -1,19 +1,28 @@
-import requests
 import json
 import os
+import urllib.request
 
-API_KEY = "wFkifHunSas5JwNh8CPzejxMjDW4mdsb"
-BASE_URL = "https://financialmodelingprep.com/api/v3"
 MEMORY_FILE = "dividend_memory.json"
 
 def get_latest_dividend(ticker):
-    url = f"{BASE_URL}/historical/stock_dividend/{ticker}?apikey={API_KEY}&limit=1"
-    response = requests.get(url)
-    data = response.json()
-    history = data.get("historical", [])
-    if history:
-        return history[0]
-    return None
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=1y&events=dividends"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    try:
+        with urllib.request.urlopen(req) as response:
+            data = json.loads(response.read())
+        events = data["chart"]["result"][0].get("events", {})
+        dividends = events.get("dividends", {})
+        if not dividends:
+            return None
+        latest_key = max(dividends.keys())
+        latest = dividends[latest_key]
+        return {
+            "amount": latest["amount"],
+            "date": latest_key
+        }
+    except Exception as e:
+        print(ticker + ": error - " + str(e))
+        return None
 
 def load_memory():
     if os.path.exists(MEMORY_FILE):
@@ -39,10 +48,10 @@ def check_dividends():
             print(ticker + ": no data found")
             continue
 
-        latest_amount = latest["dividend"]
+        latest_amount = latest["amount"]
         latest_date = latest["date"]
 
-        print(ticker + ": " + str(latest_amount) + " date: " + latest_date)
+        print(ticker + ": " + str(latest_amount) + " date: " + str(latest_date))
 
         if ticker in memory:
             previous_amount = memory[ticker]["amount"]
@@ -66,7 +75,7 @@ def check_dividends():
     if alerts:
         print("ALERT - dividend cut detected:")
         for alert in alerts:
-            print(alert["ticker"] + " | date: " + alert["date"] + " | previous: " + str(alert["previous"]) + " | new: " + str(alert["latest"]))
+            print(alert["ticker"] + " | date: " + str(alert["date"]) + " | previous: " + str(alert["previous"]) + " | new: " + str(alert["latest"]))
     else:
         print("OK - no dividend cuts detected")
 
