@@ -1,50 +1,39 @@
 import requests
 import json
+import os
 
 API_KEY = "wFkifHunSas5JwNh8CPzejxMjDW4mdsb"
 BASE_URL = "https://financialmodelingprep.com/api/v3"
+MEMORY_FILE = "dividend_memory.json"
 
-def get_dividend_history(ticker):
-    url = f"{BASE_URL}/historical/stock_dividend/{ticker}?apikey={API_KEY}"
+def get_latest_dividend(ticker):
+    url = f"{BASE_URL}/historical/stock_dividend/{ticker}?apikey={API_KEY}&limit=1"
     response = requests.get(url)
     data = response.json()
-    return data.get("historical", [])
+    history = data.get("historical", [])
+    if history:
+        return history[0]
+    return None
+
+def load_memory():
+    if os.path.exists(MEMORY_FILE):
+        with open(MEMORY_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_memory(memory):
+    with open(MEMORY_FILE, "w") as f:
+        json.dump(memory, f, indent=2)
 
 def check_dividends():
     with open("stocks.json", "r") as f:
         stocks = json.load(f)["stocks"]
 
+    memory = load_memory()
     alerts = []
 
     for ticker in stocks:
-        history = get_dividend_history(ticker)
+        latest = get_latest_dividend(ticker)
 
-        if len(history) < 2:
-            print(f"{ticker}: אין מספיק היסטוריה")
-            continue
-
-        latest = history[0]
-        previous = history[1]
-
-        latest_amount = latest["dividend"]
-        previous_amount = previous["dividend"]
-
-        print(f"{ticker}: דיבידנד אחרון {latest_amount} | קודם {previous_amount}")
-
-        if latest_amount < previous_amount:
-            alerts.append({
-                "ticker": ticker,
-                "latest": latest_amount,
-                "previous": previous_amount,
-                "date": latest["date"]
-            })
-
-    if alerts:
-        print("\n🚨 התראות חיתוך דיבידנד:")
-        for alert in alerts:
-            print(f"⚠️ {alert['ticker']} | תאריך: {alert['date']} | קודם: ${alert['previous']} | חדש: ${alert['latest']}")
-    else:
-        print("\n✅ הכל תקין – אף מניה לא חתכה דיבידנד")
-
-if __name__ == "__main__":
-    check_dividends()
+        if not latest:
+            print(f"{ticker}: לא נמצא מיד
