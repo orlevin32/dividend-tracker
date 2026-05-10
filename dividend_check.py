@@ -36,4 +36,39 @@ def check_dividends():
         latest = get_latest_dividend(ticker)
 
         if not latest:
-            print(f"{ticker}: no data found
+            print(ticker + ": no data found")
+            continue
+
+        latest_amount = latest["dividend"]
+        latest_date = latest["date"]
+
+        print(ticker + ": " + str(latest_amount) + " date: " + latest_date)
+
+        if ticker in memory:
+            previous_amount = memory[ticker]["amount"]
+            previous_date = memory[ticker]["date"]
+
+            if latest_date != previous_date:
+                if latest_amount < previous_amount:
+                    alerts.append({
+                        "ticker": ticker,
+                        "latest": latest_amount,
+                        "previous": previous_amount,
+                        "date": latest_date
+                    })
+                memory[ticker] = {"amount": latest_amount, "date": latest_date}
+        else:
+            memory[ticker] = {"amount": latest_amount, "date": latest_date}
+            print(ticker + ": saved to memory")
+
+    save_memory(memory)
+
+    if alerts:
+        print("ALERT - dividend cut detected:")
+        for alert in alerts:
+            print(alert["ticker"] + " | date: " + alert["date"] + " | previous: " + str(alert["previous"]) + " | new: " + str(alert["latest"]))
+    else:
+        print("OK - no dividend cuts detected")
+
+if __name__ == "__main__":
+    check_dividends()
