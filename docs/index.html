@@ -101,7 +101,7 @@
 
   async function loadStocks() {
     try {
-      const res = await fetch('../stocks.json?' + Date.now());
+     const res = await fetch('https://raw.githubusercontent.com/orlevin32/dividend-tracker/main/stocks.json?' + Date.now());
       const data = await res.json();
       stocksList = data.stocks;
     } catch(e) {}
