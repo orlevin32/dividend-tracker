@@ -36,4 +36,4 @@ def check_dividends():
         latest = get_latest_dividend(ticker)
 
         if not latest:
-            print(f"{ticker}: לא נמצא מיד
+            print(f"{ticker}: no data found
