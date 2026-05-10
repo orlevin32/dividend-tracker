@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מעקב דיבידנד</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a202c; }
+  header { background: #1a365d; color: white; padding: 24px 32px; }
+  header h1 { font-size: 24px; }
+  header p { font-size: 14px; opacity: 0.7; margin-top: 4px; }
+  .container { max-width: 1000px; margin: 32px auto; padding: 0 16px; }
+  .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
+  .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .card .label { font-size: 13px; color: #718096; margin-bottom: 8px; }
+  .card .value { font-size: 28px; font-weight: 700; }
+  .card.alert .value { color: #e53e3e; }
+  .card.ok .value { color: #38a169; }
+  table { width: 100%; background: white; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); border-collapse: collapse; overflow: hidden; }
+  th { background: #2d3748; color: white; padding: 14px 16px; text-align: right; font-size: 13px; font-weight: 500; }
+  td { padding: 14px 16px; border-bottom: 1px solid #edf2f7; font-size: 14px; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f7fafc; }
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge.ok { background: #c6f6d5; color: #276749; }
+  .badge.cut { background: #fed7d7; color: #9b2c2c; }
+  .growth.positive { color: #38a169; font-weight: 600; }
+  .growth.negative { color: #e53e3e; font-weight: 600; }
+  .add-section { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-top: 24px; }
+  .add-section h2 { font-size: 16px; margin-bottom: 16px; color: #2d3748; }
+  .add-row { display: flex; gap: 12px; }
+  .add-row input { flex: 1; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+  .add-row button { padding: 10px 20px; background: #1a365d; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .add-row button:hover { background: #2a4a7f; }
+  .remove-btn { background: none; border: none; color: #e53e3e; cursor: pointer; font-size: 18px; padding: 0 4px; }
+  .last-update { text-align: center; color: #a0aec0; font-size: 12px; margin-top: 16px; }
+  .no-data { text-align: center; padding: 40px; color: #a0aec0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📈 מעקב מניות דיבידנד</h1>
+  <p>עודכן אוטומטית כל יום ראשון</p>
+</header>
+<div class="container">
+  <div class="summary">
+    <div class="card">
+      <div class="label">סה"כ מניות</div>
+      <div class="value" id="total">-</div>
+    </div>
+    <div class="card ok">
+      <div class="label">תקינות</div>
+      <div class="value" id="ok-count">-</div>
+    </div>
+    <div class="card alert">
+      <div class="label">⚠️ חיתוך דיבידנד</div>
+      <div class="value" id="cut-count">-</div>
+    </div>
+  </div>
+
+  <table id="stocks-table">
+    <thead>
+      <tr>
+        <th>מניה</th>
+        <th>דיבידנד אחרון</th>
+        <th>צמיחה (שנה)</th>
+        <th>סטטוס</th>
+        <th>הסרה</th>
+      </tr>
+    </thead>
+    <tbody id="table-body">
+      <tr><td colspan="5" class="no-data">טוען נתונים...</td></tr>
+    </tbody>
+  </table>
+
+  <div class="add-section">
+    <h2>הוספת מניה</h2>
+    <div class="add-row">
+      <input type="text" id="new-ticker" placeholder="לדוגמה: AAPL" />
+      <button onclick="addStock()">הוסף</button>
+    </div>
+  </div>
+
+  <p class="last-update" id="last-update"></p>
+</div>
+
+<script>
+  let stocksData = [];
+  let stocksList = [];
+
+  async function loadData() {
+    try {
+      const res = await fetch('data.json?' + Date.now());
+      stocksData = await res.json();
+      renderTable();
+    } catch(e) {
+      document.getElementById('table-body').innerHTML = '<tr><td colspan="5" class="no-data">הנתונים יופיעו לאחר הרצה ראשונה של הכלי</td></tr>';
+    }
+  }
+
+  async function loadStocks() {
+    try {
+      const res = await fetch('../stocks.json?' + Date.now());
+      const data = await res.json();
+      stocksList = data.stocks;
+    } catch(e) {}
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('table-body');
+    if (!stocksData.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="no-data">אין מניות</td></tr>';
+      return;
+    }
+
+    let ok = 0, cut = 0;
+    tbody.innerHTML = stocksData.map(s => {
+      if (s.status === 'cut') cut++; else ok++;
+      const growth = s.growth !== null ? 
+        `<span class="growth ${s.growth >= 0 ? 'positive' : 'negative'}">${s.growth >= 0 ? '+' : ''}${s.growth}%</span>` : '-';
+      const badge = s.status === 'cut' ? 
+        '<span class="badge cut">⚠️ חיתוך</span>' : 
+        '<span class="badge ok">✅ תקין</span>';
+      return `<tr>
+        <td><strong>${s.ticker}</strong></td>
+        <td>$${s.latest_amount.toFixed(3)}</td>
+        <td>${growth}</td>
+        <td>${badge}</td>
+        <td><button class="remove-btn" onclick="removeStock('${s.ticker}')">✕</button></td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('total').textContent = stocksData.length;
+    document.getElementById('ok-count').textContent = ok;
+    document.getElementById('cut-count').textContent = cut;
+    document.getElementById('last-update').textContent = 'עודכן: ' + new Date().toLocaleDateString('he-IL');
+  }
+
+  function addStock() {
+    const input = document.getElementById('new-ticker');
+    const ticker = input.value.trim().toUpperCase();
+    if (!ticker) return;
+    alert('להוסיף את ' + ticker + ' עדכן את קובץ stocks.json ב-GitHub והוסף אותו לרשימה.');
+    input.value = '';
+  }
+
+  function removeStock(ticker) {
+    if (confirm('להסיר את ' + ticker + '?')) {
+      alert('להסיר: עדכן את קובץ stocks.json ב-GitHub והסר את ' + ticker + ' מהרשימה.');
+    }
+  }
+
+  loadData();
+  loadStocks();
+</script>
+</body>
+</html>
