@@ -1,0 +1,53 @@
+[
+  {
+    "ticker": "JNJ",
+    "latest_amount": 1.3,
+    "latest_date": "1771943400",
+    "growth": 4.8,
+    "status": "ok",
+    "history": [
+      1.24,
+      1.24,
+      1.24,
+      1.24,
+      1.3,
+      1.3,
+      1.3,
+      1.3
+    ]
+  },
+  {
+    "ticker": "KO",
+    "latest_amount": 0.53,
+    "latest_date": "1773408600",
+    "growth": 3.9,
+    "status": "ok",
+    "history": [
+      0.485,
+      0.485,
+      0.485,
+      0.51,
+      0.51,
+      0.51,
+      0.51,
+      0.53
+    ]
+  },
+  {
+    "ticker": "PG",
+    "latest_amount": 1.089,
+    "latest_date": "1777037400",
+    "growth": 3.0,
+    "status": "ok",
+    "history": [
+      1.007,
+      1.007,
+      1.007,
+      1.057,
+      1.057,
+      1.057,
+      1.057,
+      1.089
+    ]
+  }
+]
