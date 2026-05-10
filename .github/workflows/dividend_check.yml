@@ -2,8 +2,11 @@ name: Dividend Tracker
 
 on:
   schedule:
-    - cron: '0 8 * * 1'  # כל יום ראשון בשעה 8 בבוקר
-  workflow_dispatch:  # אפשרות להריץ ידנית
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   check-dividends:
@@ -18,3 +21,10 @@ jobs:
         run: pip install requests
       - name: Run dividend check
         run: python dividend_check.py
+      - name: Save data to repo
+        run: |
+          git config user.name "dividend-bot"
+          git config user.email "bot@dividend"
+          git add docs/data.json dividend_memory.json
+          git diff --staged --quiet || git commit -m "update dividend data"
+          git push
