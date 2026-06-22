@@ -19,17 +19,17 @@
   {
     "ticker": "KO",
     "latest_amount": 0.53,
-    "latest_date": "1773408600",
+    "latest_date": "1781530200",
     "growth": 3.9,
     "status": "ok",
     "history": [
       0.485,
       0.485,
-      0.485,
       0.51,
       0.51,
       0.51,
       0.51,
+      0.53,
       0.53
     ]
   },
